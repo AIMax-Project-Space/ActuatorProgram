@@ -17,6 +17,7 @@ const unsigned long STATUS_UPDATE_INTERVAL = 100;  // 100ms
 void processCommand();
 void processModeCommand(const char* cmdBuffer);
 void processServoCommand(const char* cmdBuffer);
+void processRacingCommand(const char* cmdBuffer);
 void processStepperCommand(const char* cmdBuffer);
 void sendPeriodicStatus();
 
@@ -81,6 +82,8 @@ void processCommand() {
         processModeCommand(cmdBuffer);
     } else if (cmdType == CMD_SERVO) {
         processServoCommand(cmdBuffer);
+    } else if (cmdType == CMD_RACE) {
+        processRacingCommand(cmdBuffer);
     } else if (cmdType == CMD_STEPPER) {
         processStepperCommand(cmdBuffer);
     } else {
@@ -178,6 +181,42 @@ void processServoCommand(const char* cmdBuffer) {
     ModeManager::updateCommandTime();
     
     // Send confirmation
+    ResponseBuilder::sendOK();
+}
+
+void processRacingCommand(const char* cmdBuffer) {
+    if (!ModeManager::isStepperCommandAllowed()) {
+        ResponseBuilder::sendError(ERR_STEPPER_MODE_NOT_RUNNING, "Racing command not allowed in current state");
+        return;
+    }
+
+    RacingCommand raceCmd;
+
+    char tempBuffer[SERIAL_BUFFER_SIZE];
+    strncpy(tempBuffer, cmdBuffer, SERIAL_BUFFER_SIZE - 1);
+    tempBuffer[SERIAL_BUFFER_SIZE - 1] = '\0';
+
+    if (!SerialHandler::parseRacingCommand(tempBuffer, raceCmd)) {
+        ResponseBuilder::sendError(ERR_COMM_MALFORMED_COMMAND, "Invalid RACE command format");
+        return;
+    }
+
+    if (raceCmd.stopOnly) {
+        RacingStepper::stop();
+        ServoController::moveServo(SERVO_RACE_LEFT, SERVO_NEUTRAL_ANGLE);
+        ServoController::moveServo(SERVO_RACE_RIGHT, SERVO_NEUTRAL_ANGLE);
+        ModeManager::updateCommandTime();
+        ResponseBuilder::sendOK();
+        return;
+    }
+
+    if (!ServoController::moveRacingServos(raceCmd.left_paddle_angle, raceCmd.right_paddle_angle)) {
+        ResponseBuilder::sendError(ERR_SERVO_OUT_OF_RANGE, "Racing paddle angle out of range");
+        return;
+    }
+
+    RacingStepper::start(raceCmd.direction, raceCmd.rate_hz);
+    ModeManager::updateCommandTime();
     ResponseBuilder::sendOK();
 }
 

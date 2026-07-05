@@ -7,6 +7,7 @@
 enum CommandType {
     CMD_MODE,    // MODE commands
     CMD_SERVO,   // SERVO commands
+    CMD_RACE,    // RACE commands
     CMD_STEPPER, // STEPPER commands
     CMD_UNKNOWN
 };
@@ -57,7 +58,6 @@ enum ModeCommand {
 #define ERR_COMM_BUFFER_OVERFLOW      302
 
 // ==================== SERVO CONFIGURATION ====================
-#define NUM_SERVOS                    5
 #define SERVO_MIN_ANGLE               0
 #define SERVO_MAX_ANGLE               180
 #define SERVO_NEUTRAL_ANGLE           90
@@ -67,6 +67,9 @@ enum ModeCommand {
 #define SERVO_RJ_X                    2  // Right Joystick X
 #define SERVO_RJ_Y                    3  // Right Joystick Y
 #define SERVO_TRIGGER                 4  // Trigger Button
+#define SERVO_RACE_LEFT               5  // Racing paddle servo (left)
+#define SERVO_RACE_RIGHT              6  // Racing paddle servo (right)
+#define NUM_SERVOS                    7
 
 // ==================== MOVEMENT PARAMETERS ====================
 #define DEFAULT_MOVEMENT_DURATION_MS  200  // Default smooth movement time
@@ -111,6 +114,14 @@ enum StepperDirection {
 struct StepperCommand {
     StepperDirection direction;
     uint16_t rate_hz;
+};
+
+struct RacingCommand {
+    StepperDirection direction;
+    uint16_t rate_hz;
+    uint8_t left_paddle_angle;
+    uint8_t right_paddle_angle;
+    bool stopOnly;
 };
 
 #endif

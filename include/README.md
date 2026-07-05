@@ -2,7 +2,7 @@
 
 ## Overview
 
-ESP32-based firmware for controlling game inputs through serial commands from a PC-based game logic program. It currently supports Valorant servo control and racing-mode stepper steering, with smooth interpolation for servos and non-blocking pulse generation for the stepper.
+ESP32-based firmware for controlling game inputs through serial commands from a PC-based game logic program. It currently supports Valorant servo control and racing-mode stepper steering plus racing paddle servos, with smooth interpolation for servos and non-blocking pulse generation for the stepper.
 
 ## Architecture
 
@@ -12,14 +12,14 @@ ESP32-based firmware for controlling game inputs through serial commands from a 
 PC Game Logic + GUI
     ↓ (Serial/USB)
 ESP32 Firmware
-  ├─ Serial Input Handler (parse MODE, SERVO, and STEPPER commands)
+  ├─ Serial Input Handler (parse MODE, SERVO, RACE, and STEPPER commands)
     ├─ Mode Manager (state machine)
     ├─ Servo Controller (PWM + smooth movement)
   ├─ Racing Stepper Controller (DIR + STEP pulses)
     ├─ Mode Handler (mode-specific logic)
     └─ Response Builder (feedback to PC)
     ↓ (PWM signals)
-5 Servo Motors
+7 Servo Motors
 ```
 
 ### State Machine
@@ -72,9 +72,26 @@ Example:
   SERVO,90,90,90,90,0,200\n     # Center all, trigger unpressed, move over 200ms
 ```
 
-#### 3. Stepper Commands (PC → ESP32)
+#### 3. Racing Commands (PC → ESP32)
 
-Use these in racing mode to rotate the steering wheel until you stop it:
+Use these in racing mode to update the stepper and both paddle servos in one fixed-field packet:
+
+```
+RACE,LEFT,400,90,90\n        # Stepper left, left paddle 90°, right paddle 90°
+RACE,RIGHT,600,110,70\n      # Stepper right, update both paddles
+RACE,STOP\n                 # Stop the stepper and return both paddles to neutral
+```
+
+Rules:
+
+- The packet is only accepted in `MODE_RACING` while `STATE_RUNNING`.
+- `STOP` does not need paddle angles.
+- Paddle angles are fixed-field values in the same packet as the stepper command.
+- The firmware applies the latest packet immediately; duration is handled by the sender update rate.
+
+#### 4. Stepper Commands (PC → ESP32)
+
+These remain available for direct stepper control and backward compatibility:
 
 ```
 STEPPER,LEFT[,RATE_HZ]\n      # Rotate steering wheel left continuously
@@ -162,6 +179,8 @@ DEBUG,<MESSAGE>\n                 # Debug information (optional)
 | 2        | GPIO 27  | Right Joystick X | 90°     |
 | 3        | GPIO 32  | Right Joystick Y | 90°     |
 | 4        | GPIO 33  | Trigger Button   | 0°      |
+| 5        | GPIO 13  | Racing Paddle L  | 90°     |
+| 6        | GPIO 14  | Racing Paddle R  | 90°     |
 
 ### PWM Settings
 
@@ -201,7 +220,7 @@ include/
 ✅ **Modular Design**: Clean separation of concerns  
 ✅ **Smooth Interpolation**: Configurable movement duration  
 ✅ **State Protection**: SERVO commands only in RUNNING state  
-✅ **Racing Mode Support**: Stepper steering with START/STOP/RESET flow  
+✅ **Racing Mode Support**: Combined stepper + paddle packets with START/STOP/RESET flow  
 ✅ **Timeout Detection**: Automatic neutral on 5s inactivity  
 ✅ **Error Feedback**: Detailed error codes to PC  
 ✅ **Reset Flow**: MODE,RESET returns to IDLE so the GUI can switch games  
@@ -215,7 +234,7 @@ include/
 4. **State Gating**: SERVO commands rejected unless mode RUNNING
 5. **Neutral Fallback**: MODE,STOP moves all servos to neutral
 6. **Game Switch Reset**: MODE,RESET returns the controller to IDLE so the GUI can select another mode
-7. **Stepper Gating**: STEPPER commands are only accepted in `MODE_RACING` while RUNNING
+7. **Stepper Gating**: STEPPER and RACE commands are only accepted in `MODE_RACING` while RUNNING
 
 ## Testing Checklist
 
@@ -230,6 +249,8 @@ include/
 - [ ] MODE,SET,RACING → returns correct STATUS
 - [ ] STEPPER,LEFT / STEPPER,RIGHT → rotates steering wheel
 - [ ] STEPPER,STOP → stops motor immediately
+- [ ] RACE,LEFT,400,90,90 → updates both paddles and stepper together
+- [ ] RACE,STOP → stops stepper and returns paddles to neutral
 - [ ] Invalid angle (>180) → ERR,200
 - [ ] Timeout after 5s inactivity → auto-neutral
 
@@ -288,13 +309,13 @@ with serial.Serial(PORT, BAUD, timeout=1) as ser:
 
 ## Future Extensions
 
-### Racing Mode (Ready to implement)
+### Racing Mode
 
 - [x] Stepper motor control for steering wheel
-- [ ] 2 paddle servo motors for gas/brake
+- [x] 2 paddle servo motors for gas/brake
 - [x] MODE,SET,RACING support
 - [x] MODE,RESET support
-- [ ] Merge with VALORANT mode in mode manager
+- [x] Combined racing packet for stepper + paddles
 
 ### Additional Features
 

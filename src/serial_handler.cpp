@@ -49,6 +49,8 @@ CommandType SerialHandler::getCommandType(const char* cmdBuffer) {
         return CMD_MODE;
     } else if (strncmp(cmdBuffer, "SERVO", 5) == 0) {
         return CMD_SERVO;
+    } else if (strncmp(cmdBuffer, "RACE", 4) == 0) {
+        return CMD_RACE;
     } else if (strncmp(cmdBuffer, "STEPPER", 7) == 0) {
         return CMD_STEPPER;
     }
@@ -152,6 +154,81 @@ bool SerialHandler::parseServoCommand(char* cmdBuffer, BatchServoCommand& servoC
         servoCmd.duration_ms = DEFAULT_MOVEMENT_DURATION_MS;
     }
     
+    return true;
+}
+
+bool SerialHandler::parseRacingCommand(char* cmdBuffer, RacingCommand& raceCmd) {
+    // Expected format:
+    // "RACE,LEFT,400,90,90"
+    // "RACE,RIGHT,600,110,70"
+    // "RACE,STOP"
+
+    if (strncmp(cmdBuffer, "RACE,", 5) != 0) {
+        return false;
+    }
+
+    char* ptr = cmdBuffer + 5;
+    char tempBuffer[SERIAL_BUFFER_SIZE];
+    strncpy(tempBuffer, ptr, SERIAL_BUFFER_SIZE - 1);
+    tempBuffer[SERIAL_BUFFER_SIZE - 1] = '\0';
+
+    char* token = strtok(tempBuffer, ",");
+    if (token == NULL) {
+        return false;
+    }
+
+    if (strcmp(token, "STOP") == 0) {
+        raceCmd.direction = STEPPER_DIR_STOP;
+        raceCmd.rate_hz = 0;
+        raceCmd.left_paddle_angle = SERVO_NEUTRAL_ANGLE;
+        raceCmd.right_paddle_angle = SERVO_NEUTRAL_ANGLE;
+        raceCmd.stopOnly = true;
+        return strtok(NULL, ",") == NULL;
+    }
+
+    if (strcmp(token, "LEFT") == 0) {
+        raceCmd.direction = STEPPER_DIR_LEFT;
+    } else if (strcmp(token, "RIGHT") == 0) {
+        raceCmd.direction = STEPPER_DIR_RIGHT;
+    } else {
+        return false;
+    }
+
+    token = strtok(NULL, ",");
+    if (token == NULL) {
+        return false;
+    }
+
+    int rateHz = atoi(token);
+    if (rateHz < MIN_STEPPER_RATE_HZ || rateHz > MAX_STEPPER_RATE_HZ) {
+        return false;
+    }
+
+    token = strtok(NULL, ",");
+    if (token == NULL) {
+        return false;
+    }
+    int leftAngle = atoi(token);
+
+    token = strtok(NULL, ",");
+    if (token == NULL) {
+        return false;
+    }
+    int rightAngle = atoi(token);
+
+    if (leftAngle < 0 || leftAngle > 180 || rightAngle < 0 || rightAngle > 180) {
+        return false;
+    }
+
+    if (strtok(NULL, ",") != NULL) {
+        return false;
+    }
+
+    raceCmd.rate_hz = static_cast<uint16_t>(rateHz);
+    raceCmd.left_paddle_angle = static_cast<uint8_t>(leftAngle);
+    raceCmd.right_paddle_angle = static_cast<uint8_t>(rightAngle);
+    raceCmd.stopOnly = false;
+
     return true;
 }
 

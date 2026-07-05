@@ -18,6 +18,9 @@ public:
     
     // Move all servos with interpolation (batch command)
     static bool moveAllServos(const BatchServoCommand& cmd);
+
+    // Move the racing paddles instantly to the requested angles
+    static bool moveRacingServos(uint8_t leftAngle, uint8_t rightAngle);
     
     // Move all servos to neutral position
     static void moveToNeutral();

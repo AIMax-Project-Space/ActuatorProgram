@@ -85,6 +85,14 @@ bool ServoController::moveAllServos(const BatchServoCommand& cmd) {
     return true;
 }
 
+bool ServoController::moveRacingServos(uint8_t leftAngle, uint8_t rightAngle) {
+    if (leftAngle > 180 || rightAngle > 180) {
+        return false;
+    }
+
+    return moveServo(SERVO_RACE_LEFT, leftAngle) && moveServo(SERVO_RACE_RIGHT, rightAngle);
+}
+
 void ServoController::moveToNeutral() {
     for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         const ServoCalibration* config = ServoConfig::getServoConfig(i);
