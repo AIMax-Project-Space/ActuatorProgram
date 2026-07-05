@@ -2,7 +2,7 @@
 
 ## Overview
 
-ESP32-based firmware for controlling game inputs through serial commands from a PC-based game logic program. It currently supports Valorant servo control and racing-mode stepper steering plus racing paddle servos, with smooth interpolation for servos and non-blocking pulse generation for the stepper.
+ESP32-based firmware for controlling game inputs through serial commands from a PC-based game logic program. It currently supports Valorant servo control and racing-mode paddle servos plus stepper steering, with smooth interpolation for servos and non-blocking pulse generation for the stepper.
 
 ## Architecture
 
@@ -91,7 +91,7 @@ Rules:
 
 #### 4. Stepper Commands (PC → ESP32)
 
-These remain available for direct stepper control and backward compatibility:
+These remain available for direct stepper control and backward compatibility. If your game logic sends `RACE`, you do not need to send `STEPPER` separately.
 
 ```
 STEPPER,LEFT[,RATE_HZ]\n      # Rotate steering wheel left continuously
@@ -307,9 +307,7 @@ with serial.Serial(PORT, BAUD, timeout=1) as ser:
 6. Send `MODE,STOP` then `MODE,RESET`.
 7. Select the next mode with `MODE,SET,VALORANT` or `MODE,SET,RACING`.
 
-## Future Extensions
-
-### Racing Mode
+## Racing Mode
 
 - [x] Stepper motor control for steering wheel
 - [x] 2 paddle servo motors for gas/brake
@@ -317,7 +315,7 @@ with serial.Serial(PORT, BAUD, timeout=1) as ser:
 - [x] MODE,RESET support
 - [x] Combined racing packet for stepper + paddles
 
-### Additional Features
+## Future Extensions
 
 - [ ] EEPROM calibration storage
 - [ ] Per-servo speed limiting
