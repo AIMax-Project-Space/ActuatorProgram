@@ -65,8 +65,6 @@ void loop() {
     
     // Optional: Send periodic status updates (for monitoring)
     sendPeriodicStatus();
-    
-    delay(10);  // Small delay to prevent overwhelming the loop
 }
 
 // ==================== COMMAND PROCESSING ====================

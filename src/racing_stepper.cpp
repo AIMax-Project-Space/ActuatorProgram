@@ -80,7 +80,6 @@ void RacingStepper::update() {
         if (now - stepperState.lastEdgeMicros >= STEP_PULSE_WIDTH_US) {
             setStepPin(false);
             stepperState.stepPinHigh = false;
-            stepperState.lastEdgeMicros = now;
         }
     }
 }
