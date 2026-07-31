@@ -84,10 +84,17 @@ enum ModeCommand {
 
 // ==================== STEPPER CONFIGURATION ====================
 #define STEPPER_STEP_PIN              4
-#define STEPPER_DIR_PIN               2
+#define STEPPER_DIR_PIN               16
 #define DEFAULT_STEPPER_RATE_HZ       400
 #define MIN_STEPPER_RATE_HZ           10
 #define MAX_STEPPER_RATE_HZ           2000
+
+// ==================== STEPPER LIMITS ====================
+#define LIMIT_MAX_IBUS_STEPS          500
+#define LIMIT_ROTARY_RATIO            1   // s_R_ibus (placeholder)
+#define LIMIT_STEPPER_PPR             200 // S_s (placeholder)
+#define LIMIT_ROTARY_PPR              600 // S_r (placeholder)
+#define STEPPER_MAX_POSITION_STEPS    ((LIMIT_MAX_IBUS_STEPS * 3UL * LIMIT_STEPPER_PPR * LIMIT_ROTARY_RATIO) / LIMIT_ROTARY_PPR)
 
 // ==================== STRUCT DEFINITIONS ====================
 struct ServoCommand {

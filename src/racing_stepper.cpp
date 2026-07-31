@@ -9,6 +9,7 @@ struct StepperState {
     StepperDirection direction;
     uint16_t rateHz;
     unsigned long lastEdgeMicros;
+    int32_t currentPosition;
 };
 
 StepperState stepperState = {
@@ -16,6 +17,7 @@ StepperState stepperState = {
     false,
     STEPPER_DIR_STOP,
     DEFAULT_STEPPER_RATE_HZ,
+    0,
     0
 };
 }  // namespace
@@ -32,6 +34,7 @@ void RacingStepper::init() {
     stepperState.direction = STEPPER_DIR_STOP;
     stepperState.rateHz = DEFAULT_STEPPER_RATE_HZ;
     stepperState.lastEdgeMicros = micros();
+    stepperState.currentPosition = 0;
 }
 
 void RacingStepper::start(StepperDirection direction, uint16_t rateHz) {
@@ -44,6 +47,15 @@ void RacingStepper::start(StepperDirection direction, uint16_t rateHz) {
         rateHz = MIN_STEPPER_RATE_HZ;
     } else if (rateHz > MAX_STEPPER_RATE_HZ) {
         rateHz = MAX_STEPPER_RATE_HZ;
+    }
+
+    if (direction == STEPPER_DIR_LEFT && stepperState.currentPosition <= -(int32_t)STEPPER_MAX_POSITION_STEPS) {
+        stop();
+        return;
+    }
+    if (direction == STEPPER_DIR_RIGHT && stepperState.currentPosition >= (int32_t)STEPPER_MAX_POSITION_STEPS) {
+        stop();
+        return;
     }
 
     setDirection(direction);
@@ -72,9 +84,24 @@ void RacingStepper::update() {
 
     if (!stepperState.stepPinHigh) {
         if (now - stepperState.lastEdgeMicros >= stepIntervalUs) {
+            if (stepperState.direction == STEPPER_DIR_LEFT && stepperState.currentPosition <= -(int32_t)STEPPER_MAX_POSITION_STEPS) {
+                stop();
+                return;
+            }
+            if (stepperState.direction == STEPPER_DIR_RIGHT && stepperState.currentPosition >= (int32_t)STEPPER_MAX_POSITION_STEPS) {
+                stop();
+                return;
+            }
+
             setStepPin(true);
             stepperState.stepPinHigh = true;
             stepperState.lastEdgeMicros = now;
+
+            if (stepperState.direction == STEPPER_DIR_LEFT) {
+                stepperState.currentPosition--;
+            } else if (stepperState.direction == STEPPER_DIR_RIGHT) {
+                stepperState.currentPosition++;
+            }
         }
     } else {
         if (now - stepperState.lastEdgeMicros >= STEP_PULSE_WIDTH_US) {
