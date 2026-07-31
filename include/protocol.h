@@ -91,9 +91,9 @@ enum ModeCommand {
 
 // ==================== STEPPER LIMITS ====================
 #define LIMIT_MAX_IBUS_STEPS          500
-#define LIMIT_ROTARY_RATIO            1   // s_R_ibus (placeholder)
+#define LIMIT_ROTARY_RATIO            5   // s_R_ibus (placeholder)
 #define LIMIT_STEPPER_PPR             200 // S_s (placeholder)
-#define LIMIT_ROTARY_PPR              600 // S_r (placeholder)
+#define LIMIT_ROTARY_PPR              20 // S_r (placeholder)
 #define STEPPER_MAX_POSITION_STEPS    ((LIMIT_MAX_IBUS_STEPS * 3UL * LIMIT_STEPPER_PPR * LIMIT_ROTARY_RATIO) / LIMIT_ROTARY_PPR)
 
 // ==================== STRUCT DEFINITIONS ====================
